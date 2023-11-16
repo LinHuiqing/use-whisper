@@ -364,11 +364,11 @@ export const useWhisper: UseWhisperHook = (config) => {
   }
 
   /**
-   * start Whisper transcrition event
+   * start Whisper transcription event
    * - make sure recorder state is stopped
    * - set transcribing state to true
    * - get audio blob from recordrtc
-   * - if config.removeSilence is true, load ffmpeg-wasp and try to remove silence from speec
+   * - if config.removeSilence is true, load ffmpeg-wasp and try to remove silence from speech
    * - if config.customServer is true, send audio data to custom server in base64 string
    * - if config.customServer is false, send audio data to Whisper api in multipart/form-data
    * - set transcript object with audio blob and transcription result from Whisper
@@ -468,27 +468,28 @@ export const useWhisper: UseWhisperHook = (config) => {
           chunks.current.push(mp3blob)
         }
         const recorderState = await recorder.current.getState()
-        if (recorderState === 'recording') {
+        // only transcribe if recorder is recording and user is not speaking
+        if (recorderState === 'recording' && !speaking) {
           const blob = new Blob(chunks.current, {
             type: 'audio/mpeg',
           })
           if (typeof onTranscribeCallback === 'function') {
             const transcribed = await onTranscribeCallback(blob)
             console.log('onTranscribe', transcribed)
-            
+
             if (transcribed.text) {
-                setTranscript((prev) => ({ ...prev, text: transcribed.text }))
+              setTranscript((prev) => ({ ...prev, text: transcribed.text }))
             }
           } else {
             const file = new File([blob], 'speech.mp3', {
               type: 'audio/mpeg',
             })
-  
+
             const text = await onWhispered(file)
             console.log('onTranscribing', { text })
-            
+
             if (text) {
-                setTranscript((prev) => ({ ...prev, text }))
+              setTranscript((prev) => ({ ...prev, text }))
             }
           }
         }
